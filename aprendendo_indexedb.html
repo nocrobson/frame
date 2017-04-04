@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Aprendendo IndexedDB</title>
+	</head>
+	<body>
+		<script src='js/app/models/Negociacao.js'></script>
+		<script type="text/javascript">
+			// Criando variável que recebe a instancia do DB
+			var conn;
+
+			// Carrega o módulo do indexedDB que fica no escopo global "window" do js
+			// O método open recebe dois parâmetros, o primeiro é o nome do banco
+			// o segundo é a versão do banco.
+			var openRequest = window.indexedDB.open('aluraframe', 3);
+			// Ao trabalhar com o indexedDB, temos que tratar alguns eventos que são
+			// descritos abaixo:
+
+
+			// Dispara quando o banco é criado pela primeira vez, ou quando ele recebe
+			// algum update de estrutura, porém a versão do banco deve ser maior que a
+			// versão instalada no cliente.
+			openRequest.onupgradeneeded = evento =>	{
+				let myConn = evento.target.result;
+
+				if (myConn.objectStoreNames.contains('negociacoes')) {
+					myConn.deleteObjectStore('negociacoes');
+				}
+				myConn.createObjectStore('negociacoes', {autoIncrement: true});
+			}
+
+			// Dispara quando a requisição é efetuada com sucesso
+			openRequest.onsuccess = evento => conn = evento.target.result;
+
+			// Dispara quando por algum motivo a conexão retorna um erro
+			openRequest.onerror = evento => console.log(evento.target.error);
+
+			function add() {
+				let store = beginTransaction(['negociacoes'], 'readwrite');
+				// Agora vamos guardar uma negociacao no objectStore.
+				let negociacao = new Negociacao(new Date(), 1, 100);
+
+				// Ao acessar o objectStore é muito importante entender que será feita uma requisição de alguma
+				// transação de persistencia de dados, por isso que vamos salvar o resultado dessa requisição
+
+				let result = store.add(negociacao);
+
+				// Vamos tratar o possível erro ou sucesso nessa transação.
+				result.onerror = eve => console.log(eve.target.error);
+				result.onsuccess = eve => console.log('Sucesso');
+			}
+
+			function listaNegociacoes() {
+				let store = beginTransaction(['negociacoes'], 'readwrite');	
+				let cursor = store.openCursos();
+			}
+
+			function beginTransaction(tabela, modoDeLeitura) {
+				// Criamos uma instância para a transaction "negociacoes", o segundo
+				// parm indica o tipo de transação que queremos (no caso readwrite).
+				let transaction = conn.transaction(tabela, modoDeLeitura);
+
+				// A partir da transação obtida acima, eu tenho acesso ao objectStore
+				// de negociacoes
+				return transaction.objectStore(tabela);
+			}
+
+
+		</script>
+	</body>
+</html>
